@@ -29,6 +29,7 @@ under the License.
 This connector provides a Sink that writes rolling files to any filesystem supported by
 Hadoop FileSystem. To use this connector, add the
 following dependency to your project:
+这个连接器提供了一种接收器(Sink，以下统称为 Sink)可以将回滚文件(下文中统称为 rolling,例如log4j DailyRollingFileAppender)写入到任意文件系统，包括Hadoop FileSystem(Hadoop平台文件系统: Hdfs)。使用这个连接器需要在工程中加入以下依赖。
 
 {% highlight xml %}
 <dependency>
@@ -43,11 +44,14 @@ distribution. See
 [here]({{site.baseurl}}/apis/cluster_execution.html#linking-with-modules-not-contained-in-the-binary-distribution)
 for information about how to package the program with the libraries for
 cluster execution.
+注意：目前 streaming 的连接器不是二进制发行包的一部分。关于如何打包程序和依赖库，并在集群执行，请参考 [这里]({{site.baseurl}}/apis/cluster_execution.html#linking-with-modules-not-contained-in-the-binary-distribution)
 
 #### Rolling File Sink
 
 The rolling behaviour as well as the writing can be configured but we will get to that later.
 This is how you can create a default rolling sink:
+rolling 的行为包括写文件可以在这里配置，稍后再做介绍。
+以下代码介绍了如何创建一个默认的 rolling sink：
 
 <div class="codetabs" markdown="1">
 <div data-lang="java" markdown="1">
@@ -70,6 +74,7 @@ input.addSink(new RollingSink("/base/path"))
 
 The only required parameter is the base path where the rolling files (buckets) will be
 stored. The sink can be configured by specifying a custom bucketer, writer and batch size.
+使用 rolling sink 唯一的配置是：rolling 文件（buckets：桶）所在的存储目录。这种 sink 可以指定用户 bucketer，
 
 By default the rolling sink will use the pattern `"yyyy-MM-dd--HH"` to name the rolling buckets.
 This pattern is passed to `SimpleDateFormat` with the current system time to form a bucket path. A
