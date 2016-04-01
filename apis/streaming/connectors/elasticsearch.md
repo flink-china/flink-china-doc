@@ -55,7 +55,7 @@ Elasticsearch Sink 提供了一个可以向 Elasticsearch 索引写入数据的�
 参考 [这里](https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)
 查看这两种模式的区别。
 
-代码演示了如何使用嵌入式的节点创建 Sink ，与集群进行通信。
+下方代码演示了如何使用嵌入式的节点创建 Sink ，与集群进行通信。
 
 <div class="codetabs" markdown="1">
 <div data-lang="java" markdown="1">
