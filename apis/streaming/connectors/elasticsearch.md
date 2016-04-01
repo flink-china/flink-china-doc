@@ -37,11 +37,11 @@ under the License.
 {% endhighlight %}
 
 注意，目前 streaming 连接器不是二进制发行包的一部分。
-关于如何打包程序和依赖库，并在集群执行，请参考 [here]({{site.baseurl}}/apis/cluster_execution.html#linking-with-modules-not-contained-in-the-binary-distribution) 
+关于如何打包程序和依赖库，并在集群执行，请参考 [这里]({{site.baseurl}}/apis/cluster_execution.html#linking-with-modules-not-contained-in-the-binary-distribution) 
 
 #### 安装 Elasticsearch
 
-创建 Elasticsearch 集群可以参见 [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html).
+创建 Elasticsearch 集群可以参见 [这里](https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html).
 保证创建并牢记集群的名字，当创建一个 Sink 向集群中写入数据时，需要配置集群的名字。
 
 #### Elasticsearch Sink
@@ -49,10 +49,10 @@ Elasticsearch Sink 提供了一个可以向 Elasticsearch 索引写入数据的�
 
 这个接收器可以使用两个不同的方式与 Elasticsearch 通信。
 
-1. 嵌入式的集群节点
-2. 客户端连接
+1. 嵌入式的集群节点(embedded Node)
+2. 客户端连接(TransportClient)
 
-参考 [here](https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)
+参考 [这里](https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)
 查看这两种模式的区别。
 
 代码演示了如何使用嵌入式的节点创建 Sink ，与集群进行通信。
@@ -101,16 +101,16 @@ text.addSink(new ElasticsearchSink(config, new IndexRequestBuilder[String] {
 </div>
 </div>
 
-注意，字符串的映射被用来配置 Sink 。配置的 keys 记录在 Elasticsearch 的文档中 [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html).
-特别重要的是 `cluster.name` 参数，必须和你的集群配置的名字一致。
+注意，如何使用 String 类型的 Map 对象来配置 Sink。配置的 keys 记录在 Elasticsearch 的文档中 [这里](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html).
+特别重要的是 `cluster.name` 参数，必须和集群配置的名字一致。
 
-在内部， sink 使用 `BulkProcessor` 方式向你的集群批量发送索引请求。
+底层实现中， sink 使用 `BulkProcessor` 方式向集群批量发送索引请求。
 这会在发送请求之前缓存每个元素。`BulkProcessor` 操作可以使用以下这些参数进行配置：
  * **bulk.flush.max.actions**: 最大缓存数
- * **bulk.flush.max.size.mb**: 最大缓存数据量(M)
+ * **bulk.flush.max.size.mb**: 最大缓存数据大小(单位MB)
  * **bulk.flush.interval.ms**: 不考虑以上两个配置,集群刷新数据的间隔时间（ms）
 
-示例代码使用 `TransportClient` 方式连接集群，实现功能同 embedded Node 方式，
+下方的示例代码使用 `TransportClient` 方式连接集群，实现功能同 embedded Node 方式。
 
 <div class="codetabs" markdown="1">
 <div data-lang="java" markdown="1">
@@ -166,4 +166,4 @@ text.addSink(new ElasticsearchSink(config, transports, new IndexRequestBuilder[S
 
 这两种方式的不同之处在于，使用 `TransportClient` 方式连接集群，我们需要为 Sink 提供 Elasticsearch 集群的机器列表。
 
-更多 Elasticsearch 信息请参考 [here](https://elastic.co) 。
+更多 Elasticsearch 信息请参考 [这里](https://elastic.co) 。
