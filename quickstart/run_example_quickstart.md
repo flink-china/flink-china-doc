@@ -1,9 +1,9 @@
 ---
-title: "Quick Start: Monitoring the Wikipedia Edit Stream"
+title: "快速起步: 监控维基百科编辑流"
 # Top navigation
 top-nav-group: quickstart
 top-nav-pos: 2
-top-nav-title: "Example: Wikipedia Edit Stream"
+top-nav-title: "例子: 维基百科编辑流"
 ---
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
@@ -27,19 +27,15 @@ under the License.
 * This will be replaced by the TOC
 {:toc}
 
-In this guide we will start from scratch and go from setting up a Flink project and running
-a streaming analysis program on a Flink cluster.
+在这篇指南中，我们将从零开始创建一个Flink项目，然后在一个Flink集群上运行一个流分析程序。
 
-Wikipedia provides an IRC channel where all edits to the wiki are logged. We are going to
-read this channel in Flink and count the number of bytes that each user edits within
-a given window of time. This is easy enough to implement in a few minutes using Flink but it will
-give you a good foundation from which to start building more complex analysis programs on your own.
+维基百科提供了一个记录了所有词条编辑历史的IRC通道。我们将从这个通道读取到Flink中，统计在一个窗口时间内每个用户编辑
+的字节数。这个程序很容易，以至于在几分钟之内就可以利用Flink实现。但是这个简单的程序却可以给我们建立更加复杂的数据
+分析程序打下一个很好的基础。
 
-## Setting up a Maven Project
+## 创建一个Maven工程
 
-We are going to use a Flink Maven Archetype for creating our project stucture. Please
-see [Java API Quickstart]({{ site.baseurl }}/quickstart/java_api_quickstart.html) for more details
-about this. For our purposes, the command to run is this:
+我们将利用一下Maven命令创建我们的项目结构。更加详细的步骤请查看[Java API Quickstart]({{ site.baseurl }}/quickstart/java_api_quickstart.html)页面。执行下列命令行可以达到我们的目的：
 
 {% highlight bash %}
 $ mvn archetype:generate\
@@ -53,8 +49,8 @@ $ mvn archetype:generate\
     -DinteractiveMode=false\
 {% endhighlight %}
 
-You can edit the `groupId`, `artifactId` and `package` if you like. With the above parameters,
-Maven will create a project structure that looks like this:
+如果你喜欢，你可以修改参数`groupId`, `artifactId` 和 `package`。根据以上的参数，Maven会创建一个结构如下的项目：
+
 
 {% highlight bash %}
 $ tree wiki-edits
@@ -71,16 +67,16 @@ wiki-edits/
             └── log4j.properties
 {% endhighlight %}
 
-There is our `pom.xml` file that already has the Flink dependencies added in the root directory and
-several example Flink programs in `src/main/java`. We can delete the example programs, since
-we are going to start from scratch:
+
+在根目录下有一个`pom.xml`文件，文件中包含了Flink依赖。同事在文件夹`src/main/java`下有几个Flink示例程序。因为我们
+是从零开始创建项目，我们也可以删除这些示例程序。
 
 {% highlight bash %}
 $ rm wiki-edits/src/main/java/wikiedits/*.java
 {% endhighlight %}
 
-As a last step we need to add the Flink Wikipedia connector as a dependency so that we can
-use it in our program. Edit the `dependencies` section so that it looks like this:
+
+最后项目中用到了Flink Wikipedia connector，我们需要将之作为依赖添加进来。编辑`dependencies` 模块，结果如下：
 
 {% highlight xml %}
 <dependencies>
@@ -107,13 +103,12 @@ use it in our program. Edit the `dependencies` section so that it looks like thi
 </dependencies>
 {% endhighlight %}
 
-Notice the `flink-connector-wikiedits_2.10` dependency that was added. (This example and
-the Wikipedia connector were inspired by the *Hello Samza* example of Apache Samza.)
+注意`flink-connector-wikiedits_2.10`依赖也添加了进来。（这个用例和Wikipedia connector受到了Apache Samza
+示例*Hello Samza*的启发）
 
-## Writing a Flink Program
+## 编写Flink程序
 
-It's coding time. Fire up your favorite IDE and import the Maven project or open a text editor and
-create the file `src/main/java/wikiedits/WikipediaAnalysis.java`:
+是时候着手写代码了。打开你最喜欢的IDE并倒入这个Maven项目，或者打开文字编辑，然后创建文件`src/main/java/wikiedits/WikipediaAnalysis.java`:
 
 {% highlight java %}
 package wikiedits;
@@ -126,32 +121,26 @@ public class WikipediaAnalysis {
 }
 {% endhighlight %}
 
-I admit it's very bare bones now but we will fill it as we go. Note, that I'll not give
-import statements here since IDEs can add them automatically. At the end of this section I'll show
-the complete code with import statements if you simply want to skip ahead and enter that in your
-editor.
+我承认目前这只是一个空框架，随着一步步操作我们将填充这个框架。注意，因为IDEs能够自动的添加import声明，我就不再提供。
+如果你想跳过，直接在编辑器中输入代码，在这个章节的最后，我会展示带有import声明的完整代码。
 
-The first step in a Flink program is to create a `StreamExecutionEnvironment`
-(or `ExecutionEnvironment` if you are writing a batch job). This can be used to set execution
-parameters and create sources for reading from external systems. So let's go ahead, add
-this to the main method:
+在一个Flink程序中的第一步是创建一个`StreamExecutionEnvironment`（或者`ExecutionEnvironment`，如果你想编写批处理
+程序）。它可以用来设置执行参数和创建数据源从外部系统读取数据。现在，让我们添加到main方法里：
 
 {% highlight java %}
 StreamExecutionEnvironment see = StreamExecutionEnvironment.getExecutionEnvironment();
 {% endhighlight %}
 
-Next, we will create a source that reads from the Wikipedia IRC log:
+接下来我们将创建一个数据源来从维基百科IRC日志中读取数据
 
 {% highlight java %}
 DataStream<WikipediaEditEvent> edits = see.addSource(new WikipediaEditsSource());
 {% endhighlight %}
 
-This creates a `DataStream` of `WikipediaEditEvent` elements that we can further process. For
-the purposes of this example we are interested in determining the number of added or removed
-bytes that each user causes in a certain time window, let's say five seconds. For this we first
-have to specify that we want to key the stream on the user name, that is to say that operations
-on this should take the key into account. In our case the summation of edited bytes in the windows
-should be per unique user. For keying a Stream we have to provide a `KeySelector`, like this:
+这行代码创建一个由 `WikipediaEditEvent` 组成的`DataStream`。在这个例子中，我们感兴趣的是统计在一个窗口时间内每个
+用户添加和删除词条的字节数，在这我们设定窗口时常为5秒。首先我们必须指出我们想根据用户名设置流的键，也就是说在这个流上
+的操作需要将键考虑进去。在我们这个用例中，需要统计的是每个特定的用户在窗口时间内所编辑的字节数总和。在一个流上设置键，
+我们需要提供一个`KeySelector`，如下所示：
 
 {% highlight java %}
 KeyedStream<WikipediaEditEvent, String> keyedEdits = edits
@@ -163,12 +152,9 @@ KeyedStream<WikipediaEditEvent, String> keyedEdits = edits
     });
 {% endhighlight %}
 
-This gives us a Stream of `WikipediaEditEvent` that has a `String` key, the user name.
-We can now specify that we want to have windows imposed on this stream and compute a
-result based on elements in these windows. A window specifies a slice of a Stream
-on which to perform a computation. They are required when performing an aggregation
-computation on an infinite stream of elements. In our example we will say
-that we want to aggregate the sum of edited bytes for every five seconds:
+这些代码给我们一个拥有一个`String`类型键（用户名）的流。现在我们可以说明我们想在这个流上添加窗口，并根据这些窗口
+计算结果。一个窗口表示一个对一个需要执行计算的流上的切割。当需要在一个拥有无限数据元素的流上执行聚合操作的时候，
+窗口是必须的。在我们的例子中，我们想计算每5秒钟每个用户的总编辑字节数：
 
 {% highlight java %}
 DataStream<Tuple2<String, Long>> result = keyedEdits
@@ -183,27 +169,26 @@ DataStream<Tuple2<String, Long>> result = keyedEdits
     });
 {% endhighlight %}
 
-The first call, `.window()`, specifies that we want to have tumbling (non-overlapping) windows
-of five seconds. The second call specifies a *Fold transformation* on each window slice for
-each unique key. In our case we start from an initial value of `("", 0L)` and add to it the byte
-difference of every edit in that time window for a user. The resulting Stream now contains
-a `Tuple2<String, Long>` for every user which gets emitted every five seconds.
 
-The only thing left to do is print the stream to the console and start execution:
+第一个调用语句，`.window()`，表明我们想要一个5s的翻滚窗口(非重叠)。第二个调用表明一个应用于每个独特的键的各个窗口
+切割之上的*Fold transformation*操作。在我们这个示例中，我们从一个初始化值`("", 0L)` 开始，然后加上一个用户在特定
+窗口时间内每次撰写的词条字节数。最后得到的是一个由`Tuple2<String, Long>`组成的流，每个`Tuple2<String, Long>`对应
+一个用户，且每5s为每个用户生成一个新的Tuple。
 
+
+现在唯一剩下的事就是将流打印到控制台上并开始执行设定的操作：
 {% highlight java %}
 result.print();
 
 see.execute();
 {% endhighlight %}
 
-That last call is necessary to start the actual Flink job. All operations, such as creating
-sources, transformations and sinks only build up a graph of internal operations. Only when
-`execute()` is called is this graph of operations thrown on a cluster or executed on your local
-machine.
+为了启动Flink任务，最后一行代码是必须要有的。所有的操作，例如 creating sources, transformations 和 sinks
+仅仅是构建了一个由内部操作组成的图。只有当`execute()`调用的时候，这个有内部操作组成的图才会被提交到一个集群，或
+在你的本机上执行。
 
-The complete code so far is this:
 
+到目前为止，完整的代码如下：
 {% highlight java %}
 package wikiedits;
 
@@ -251,15 +236,14 @@ public class WikipediaAnalysis {
 }
 {% endhighlight %}
 
-You can run this example in your IDE or on the command line, using Maven:
+你可以用Maven命令在你的IDE中或者命令行中运行这个例子：
 
 {% highlight bash %}
 $ mvn clean package
 $ mvn exec:java -Dexec.mainClass=wikiedits.WikipediaAnalysis
 {% endhighlight %}
 
-The first command builds our project and the second executes our main class. The output should be
-similar to this:
+第一个命令build我们的项目，第二个命令执行Main类。输出应该如下所示：
 
 {% highlight bash %}
 1> (Fenix down,114)
@@ -274,24 +258,18 @@ similar to this:
 4> (KasparBot,-245)
 {% endhighlight %}
 
-The number in front of each line tells you on which parallel instance of the print sink the output
-was produced.
+在每行开始的数字告诉我们这行输出是哪一个并行的实例产生的。
 
-This should get you started with writing your own Flink programs. You can check out our guides
-about [basic concepts]{{{ site.baseurl }}/apis/common/index.html} and the
-[DataStream API]{{{ site.baseurl }}/apis/streaming/index.html} if you want to learn more. Stick
-around for the bonus exercise if you want to learn about setting up a Flink cluster on
-your own machine and writing results to [Kafka](http://kafka.apache.org).
+这些应该已经可以帮助你开始编写自己的Flink程序了。如果你想进一步学习Flink和Kafka，你可以查看我们的关于[基本概念]
+{{{ site.baseurl }}/apis/common/index.html}和[DataStream API]{{{ site.baseurl }}/apis/streaming/index.html} 的指南。如果你想学习如何搭建在本地搭建一个Flink集群，并将结果写入[Kafka](http://kafka.apache.org)，请继续下面的额外练习。
 
-## Bonus Exercise: Running on a Cluster and Writing to Kafka
 
-Please follow our [setup quickstart](setup_quickstart.html) for setting up a Flink distribution
-on your machine and refer to the [Kafka quickstart](https://kafka.apache.org/documentation.html#quickstart)
-for setting up a Kafka installation before we proceed.
+## 额外练习: 在集群上运行程序并将结果写到Kafka
 
-As a first step, we have to add the Flink Kafka connector as a dependency so that we can
-use the Kafka sink. Add this to the `pom.xml` file in the dependencies section:
+在我们开始之前，请跟着我们[快速起步：安装](setup_quickstart.html)的步骤搭建一个Flink集群，参考[Kafka quickstart]
+(https://kafka.apache.org/documentation.html#quickstart)安装Kafka。
 
+作为第一步，为了使用Kafka sink, 我们必须先将Flink Kafka connector作为一个依赖添加到pop.xml的dependencies section:
 {% highlight xml %}
 <dependency>
     <groupId>org.apache.flink</groupId>
@@ -300,9 +278,8 @@ use the Kafka sink. Add this to the `pom.xml` file in the dependencies section:
 </dependency>
 {% endhighlight %}
 
-Next, we need to modify our program. We'll remove the `print()` sink and instead use a
-Kafka sink. The new code looks like this:
 
+接下来我们需要修改我们的程序。我们将`print()` sink替换成Kafka sink。更新后的代码如下：
 {% highlight java %}
 
 result
@@ -315,41 +292,41 @@ result
     .addSink(new FlinkKafkaProducer08<>("localhost:9092", "wiki-result", new SimpleStringSchema()));
 {% endhighlight %}
 
-Note how we first transform the Stream of `Tuple2<String, Long>` to a Stream of `String` using
-a MapFunction. We are doing this because it is easier to write plain strings to Kafka. Then,
-we create a Kafka sink. You might have to adapt the hostname and port to your setup. `"wiki-result"`
-is the name of the Kafka stream that we are going to create next, before running our program.
-Build the project using Maven because we need the jar file for running on the cluster:
+
+注意我们是怎样利用一个MapFunction把`Tuple2<String, Long>`流转换成`String`流的。这样做的原因是向Kafka中写入明文
+字符串相对要容易一些。然后我们创建了一个Kafka sink。或许你还需要适应你设置的主机名称和端口。在我们开始运行我们的程序
+之前，我们还需要创建一个名称为`"wiki-result"`的Kafka 流。因为在集群上运行这个程序需要jar包，所以我们用Maven来打包
+这个项目：
+
 
 {% highlight bash %}
 $ mvn clean package
 {% endhighlight %}
 
-The resulting jar file will be in the `target` subfolder: `target/wiki-edits-0.1.jar`. We'll use
-this later.
+得到的jar文件将会位于子文件夹`target`下：`target/wiki-edits-0.1.jar`。 下面我们将会用到这个文件。
 
-Now we are ready to launch a Flink cluster and run the program that writes to Kafka on it. Go
-to the location where you installed Flink and start a local cluster:
+现在我们已经准备好启动一个Flink集群，并在该集群上执行一个向Kafka写数据的程序。到我们安装Flink的目录下，并启动一个
+本地集群：
 
 {% highlight bash %}
 $ cd my/flink/directory
 $ bin/start-local.sh
 {% endhighlight %}
 
-We also have to create the Kafka Topic, so that our program can write to it:
+我们还必须创建一个Kafka主题，这样我们的程序才可以向这个Kafka主题写数据：
 
 {% highlight bash %}
 $ cd my/kafka/directory
 $ bin/kafka-topics.sh --create --zookeeper localhost:2181 --topic wiki-results
 {% endhighlight %}
 
-Now we are ready to run our jar file on the local Flink cluster:
+现在我们可以在本地Flink集群上运行我们的jar文件了：
 {% highlight bash %}
 $ cd my/flink/directory
 $ bin/flink run -c wikiedits.WikipediaAnalysis path/to/wikiedits-0.1.jar
 {% endhighlight %}
 
-The output of that command should look similar to this, if everything went according to plan:
+如果一切按照我们的计划顺利进行，这个命令的输出应该类似于这样：
 
 ```
 03/08/2016 15:09:27 Job execution switched to status RUNNING.
@@ -361,25 +338,21 @@ The output of that command should look similar to this, if everything went accor
 03/08/2016 15:09:27 Source: Custom Source(1/1) switched to RUNNING
 ```
 
-You can see how the individual operators start running. There are only two, because
-the operations after the window get folded into one operation for performance reasons. In Flink
-we call this *chaining*.
+你可以看到各个独立的操作是怎样开始运行的。在这里只有两个，因为处于性能方面的考虑窗口后的这些操作被合并成一个操作了。在Flink中，你可以把它叫做*chaining*。
 
-You can observe the output of the program by inspecting the Kafka topic using the Kafka
-console consumer:
+你可以通过Kafka 控制台消费者检查Kafka主题，进而检查程序的输出。
 
 {% highlight bash %}
 bin/kafka-console-consumer.sh  --zookeeper localhost:2181 --topic wiki-result
 {% endhighlight %}
 
-You can also check out the Flink dashboard which should be running at [http://localhost:8081](http://localhost:8081).
-You get an overview of your cluster resources and running jobs:
+
+你也可以检查运行在[http://localhost:8081](http://localhost:8081)的Flink 仪表盘。从那你可以获得
+你的集群资源和正在运行的任务的总体概述：
 
 <a href="{{ site.baseurl }}/page/img/quickstart-example/jobmanager-overview.png" ><img class="img-responsive" src="{{ site.baseurl }}/page/img/quickstart-example/jobmanager-overview.png" alt="JobManager Overview"/></a>
 
-If you click on your running job you will get a view where you can inspect individual operations
-and, for example, see the number of processed elements:
-
+如果你单击正在运行的任务，你将会得到一个可以检查各个独立操作的详细情况的视图。比如，查看已经处理的单位数据总数的视图：
 <a href="{{ site.baseurl }}/page/img/quickstart-example/jobmanager-job.png" ><img class="img-responsive" src="{{ site.baseurl }}/page/img/quickstart-example/jobmanager-job.png" alt="Example Job View"/></a>
 
-This concludes our little tour of Flink. If you have any questions, please don't hesitate to ask on our [Mailing Lists](http://flink.apache.org/community.html#mailing-lists).
+这些仅仅包含了我们学习Flink的一点心得。 如果你有任何疑问，咨询我们的 [Mailing Lists](http://flink.apache.org/community.html#mailing-lists)。我们很高兴可以提供帮助。
