@@ -29,13 +29,11 @@ under the License.
 
 在这篇指南中，我们将从零开始创建一个Flink项目，然后在一个Flink集群上运行一个流分析程序。
 
-维基百科提供了一个记录了所有词条编辑历史的IRC通道。我们将从这个通道读取到Flink中，统计在一个窗口时间内每个用户编辑
-的字节数。这个程序很容易，以至于在几分钟之内就可以利用Flink实现。但是这个简单的程序却可以给我们建立更加复杂的数据
-分析程序打下一个很好的基础。
+维基百科提供了一个记录了所有词条编辑历史的IRC通道。我们将这个通道读取到Flink中，统计在一个窗口时间内每个用户编辑的字节数。这个程序很容易，以至于在几分钟之内就可以利用Flink实现。但是这个简单的程序却可以给我们建立更加复杂的数据分析程序打下一个很好的基础。
 
 ## 创建一个Maven工程
 
-我们将利用一下Maven命令创建我们的项目结构。更加详细的步骤请查看[Java API Quickstart]({{ site.baseurl }}/quickstart/java_api_quickstart.html)页面。执行下列命令行可以达到我们的目的：
+我们使用Maven命令创建我们的项目。更加详细的步骤请查看[Java API Quickstart]({{ site.baseurl }}/quickstart/java_api_quickstart.html)页面。执行下列命令行可以达到我们的目的：
 
 {% highlight bash %}
 $ mvn archetype:generate\
@@ -49,7 +47,7 @@ $ mvn archetype:generate\
     -DinteractiveMode=false\
 {% endhighlight %}
 
-如果你喜欢，你可以修改参数`groupId`, `artifactId` 和 `package`。根据以上的参数，Maven会创建一个结构如下的项目：
+如果你喜欢，可以修改参数`groupId`, `artifactId` 和 `package`。使用上面命令行中的参数，Maven会创建一个结构如下的项目：
 
 
 {% highlight bash %}
@@ -68,15 +66,14 @@ wiki-edits/
 {% endhighlight %}
 
 
-在根目录下有一个`pom.xml`文件，文件中包含了Flink依赖。同事在文件夹`src/main/java`下有几个Flink示例程序。因为我们
-是从零开始创建项目，我们也可以删除这些示例程序。
+在根目录下有一个`pom.xml`文件，文件中包含了Flink依赖。同时在文件夹`src/main/java`下有几个Flink示例程序。因为我们是从零开始创建项目，可以删除这些示例程序。
 
 {% highlight bash %}
 $ rm wiki-edits/src/main/java/wikiedits/*.java
 {% endhighlight %}
 
 
-最后项目中用到了Flink Wikipedia connector，我们需要将之作为依赖添加进来。编辑`dependencies` 模块，结果如下：
+最后，项目中用到了Flink Wikipedia connector，我们需要把它作为依赖添加进来到项目总。编辑`pom.xml`文件的`dependencies` 模块，结果如下：
 
 {% highlight xml %}
 <dependencies>
@@ -103,12 +100,12 @@ $ rm wiki-edits/src/main/java/wikiedits/*.java
 </dependencies>
 {% endhighlight %}
 
-注意`flink-connector-wikiedits_2.10`依赖也添加了进来。（这个用例和Wikipedia connector受到了Apache Samza
+注意`flink-connector-wikiedits_2.10`依赖也添加了进来。（此例子和Wikipedia connector受到了Apache Samza
 示例*Hello Samza*的启发）
 
 ## 编写Flink程序
 
-是时候着手写代码了。打开你最喜欢的IDE并倒入这个Maven项目，或者打开文字编辑，然后创建文件`src/main/java/wikiedits/WikipediaAnalysis.java`:
+是时候着手写代码了。打开你最喜欢的IDE并导入这个Maven项目，或者打开文字编辑，然后创建文件`src/main/java/wikiedits/WikipediaAnalysis.java`:
 
 {% highlight java %}
 package wikiedits;
@@ -121,11 +118,9 @@ public class WikipediaAnalysis {
 }
 {% endhighlight %}
 
-我承认目前这只是一个空框架，随着一步步操作我们将填充这个框架。注意，因为IDEs能够自动的添加import声明，我就不再提供。
-如果你想跳过，直接在编辑器中输入代码，在这个章节的最后，我会展示带有import声明的完整代码。
+目前为止，我们只有一个空框架，随着接下来我们将一步步填充这个框架。注意，因为IDEs能够自动的添加import声明，所以我就不再提供。如果你想跳过这些步骤，直接在编辑器中输入代码，在这个章节的最后，我会展示带有import声明的完整代码。
 
-在一个Flink程序中的第一步是创建一个`StreamExecutionEnvironment`（或者`ExecutionEnvironment`，如果你想编写批处理
-程序）。它可以用来设置执行参数和创建数据源从外部系统读取数据。现在，让我们添加到main方法里：
+在一个Flink程序中的第一步是创建一个`StreamExecutionEnvironment`（或者`ExecutionEnvironment`，如果你想编写批处理程序）。它可以用来设置执行参数和创建数据源从外部系统读取数据。现在，让我们添加到main方法里：
 
 {% highlight java %}
 StreamExecutionEnvironment see = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -137,10 +132,7 @@ StreamExecutionEnvironment see = StreamExecutionEnvironment.getExecutionEnvironm
 DataStream<WikipediaEditEvent> edits = see.addSource(new WikipediaEditsSource());
 {% endhighlight %}
 
-这行代码创建一个由 `WikipediaEditEvent` 组成的`DataStream`。在这个例子中，我们感兴趣的是统计在一个窗口时间内每个
-用户添加和删除词条的字节数，在这我们设定窗口时常为5秒。首先我们必须指出我们想根据用户名设置流的键，也就是说在这个流上
-的操作需要将键考虑进去。在我们这个用例中，需要统计的是每个特定的用户在窗口时间内所编辑的字节数总和。在一个流上设置键，
-我们需要提供一个`KeySelector`，如下所示：
+这行代码创建一个由 `WikipediaEditEvent` 组成的`DataStream`。在这个例子中，我们感兴趣的是统计在一个窗口时间内每个用户添加和删除词条的字节数，在这我们设定窗口时常为5秒。首先必须指出我们在这把用户名设置成流的键，也就是说在这个流上的操作需要将键考虑进去。在我们这个用例中，需要统计的是每个特定的用户在窗口时间内所编辑的字节数总和。在一个流上设置键，我们需要提供一个`KeySelector`，如下所示：
 
 {% highlight java %}
 KeyedStream<WikipediaEditEvent, String> keyedEdits = edits
@@ -152,9 +144,8 @@ KeyedStream<WikipediaEditEvent, String> keyedEdits = edits
     });
 {% endhighlight %}
 
-这些代码给我们一个拥有一个`String`类型键（用户名）的流。现在我们可以说明我们想在这个流上添加窗口，并根据这些窗口
-计算结果。一个窗口表示一个对一个需要执行计算的流上的切割。当需要在一个拥有无限数据元素的流上执行聚合操作的时候，
-窗口是必须的。在我们的例子中，我们想计算每5秒钟每个用户的总编辑字节数：
+This gives us a Stream of WikipediaEditEvent that has a String key, the user name.
+上面的代码，让我们得到一个由`WikipediaEditEvent`组成的Stream，这个Stream拥有一个`String`类型的键（用户名）。现在我们可以在这个流上添加窗口，并根据这些窗口计算结果。每个窗口表示流上的一个切割片段，计算就应用在这些切片上。当需要在一个拥有无限数据元素的Stream上执行聚合操作的时候，窗口是必须的。在我们的例子中，我们想计算每5秒钟每个用户的总编辑字节数：
 
 {% highlight java %}
 DataStream<Tuple2<String, Long>> result = keyedEdits
@@ -170,13 +161,10 @@ DataStream<Tuple2<String, Long>> result = keyedEdits
 {% endhighlight %}
 
 
-第一个调用语句，`.window()`，表明我们想要一个5s的翻滚窗口(非重叠)。第二个调用表明一个应用于每个独特的键的各个窗口
-切割之上的*Fold transformation*操作。在我们这个示例中，我们从一个初始化值`("", 0L)` 开始，然后加上一个用户在特定
-窗口时间内每次撰写的词条字节数。最后得到的是一个由`Tuple2<String, Long>`组成的流，每个`Tuple2<String, Long>`对应
-一个用户，且每5s为每个用户生成一个新的Tuple。
+第一个调用语句，`.window()`，表明我们想要一个5s的翻滚窗口(非重叠)。第二个调用表明一个应用于每个独特的键的各个窗口切片之上的*Fold transformation*操作。在我们这个示例中，我们从一个初始化值`("", 0L)` 开始，然后加上一个用户在特定窗口时间内每次撰写的词条字节数。最后得到的是一个由`Tuple2<String, Long>`组成的流，每个`Tuple2<String, Long>`对应一个用户，且每5s为每个用户生成一个新的Tuple。
 
 
-现在唯一剩下的事就是将流打印到控制台上并开始执行设定的操作：
+现在唯一剩下的事就是将结果Stream打印到控制台上并开始执行设定的操作：
 {% highlight java %}
 result.print();
 
@@ -260,8 +248,7 @@ $ mvn exec:java -Dexec.mainClass=wikiedits.WikipediaAnalysis
 
 在每行开始的数字告诉我们这行输出是哪一个并行的实例产生的。
 
-这些应该已经可以帮助你开始编写自己的Flink程序了。如果你想进一步学习Flink和Kafka，你可以查看我们的关于[基本概念]
-{{{ site.baseurl }}/apis/common/index.html}和[DataStream API]{{{ site.baseurl }}/apis/streaming/index.html} 的指南。如果你想学习如何搭建在本地搭建一个Flink集群，并将结果写入[Kafka](http://kafka.apache.org)，请继续下面的额外练习。
+这些应该已经可以帮助你开始编写自己的Flink程序了。如果你想进一步学习Flink和Kafka，你可以查看我们的关于[基本概念]({{ site.baseurl }}/apis/common/index.html)和[DataStream API]({{ site.baseurl }}/apis/streaming/index.html)的指南。如果你想学习如何搭建在本地搭建一个Flink集群，并将结果写入[Kafka](http://kafka.apache.org)，请继续下面的额外练习。
 
 
 ## 额外练习: 在集群上运行程序并将结果写到Kafka
