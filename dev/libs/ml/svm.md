@@ -1,6 +1,6 @@
 ---
 mathjax: include
-title: 支持向量机（SVM using CoCoA）
+title: 支持向量机（基于CocoA技术的支持向量机SVM）
 nav-parent_id: ml
 ---
 <!--
@@ -27,19 +27,18 @@ under the License.
 
 ## 描述
 
-使用具有合页损失函数的 CoCoA 算法实现了软间隔 SVM。
-此算法解决了如下损失函数最小化问题：
+实现一个基于CocoA的分布式优化的通用框架技术的带有柔性间隔SVM算法，cocaA中使用合页损失函数能提升SVM中算法的效率。
+这个损失函数主要解决以下表达式最小化问题：
 
 $$\min_{\mathbf{w} \in \mathbb{R}^d} \frac{\lambda}{2} \left\lVert \mathbf{w} \right\rVert^2 + \frac{1}{n} \sum_{i=1}^n l_{i}\left(\mathbf{w}^T\mathbf{x}_i\right)$$
+(公式1-1)
 
 其中 $\mathbf{w}$ 为权值向量，$\lambda$ 为正则化常数，
-$$\mathbf{x}_i \in \mathbb{R}^d$$ being the data points and $$l_{i}$$ 为凸损失函数，并依赖于输出分类 $$y_{i} \in \mathbb{R}$$。在当前的实现中正则化项为 $\ell_2$ 范数，损失函数为合页损失函数：
+$$\mathbf{x}_i \in \mathbb{R}^d$$ 是待分类的数据点集合，而 $$l_{i}$$ 为凸损失函数，并依赖于输出分类 $$y_{i} \in \mathbb{R}$$。在当前的算法实现中，正则化项为 $\ell_2$ 范数，损失函数为合页损失函数：
 
   $$l_{i} = \max\left(0, 1 - y_{i} \mathbf{w}^T\mathbf{x}_i \right)$$
 
-基于前面的选择，问题的定义就等价于软间隔支持向量机(SVM)。最小值通过 SDCA 算法求得，为了让算法在分布式环境下更加高效，COCOA 算法首先在本地的一个数据块上计算若干次 SDCA 迭代，然后再将本地更新合并到有效全局状态中。
-
-全局状态被重新分配到下一轮本地 SDCA 迭代的数据分区，然后执行。 因为只有外层迭代需要网络通信，外层迭代的次数和本地 SDCA 迭代决定了全部的网络消耗。一旦独立的数据分区分布在集群中时，本地 SDCA 是不容易并行的。
+由上文描述可知，我们的要解决的问题实现柔性间隔支持向量机(SVM)算法，因此如何找到一条高效的柔性间隔函数，是我们数据训练的目标。公式1中的损失函数最小化问题通过 SDCA（ stochastic dual coordinate ascent） 算法求得，为了让SDCA算法在分布式环境执行下更加高效，COCOA 算法首先在本地的一个数据块上计算若干次 SDCA 迭代，然后再将本地更新合并到有效全局状态中。全局状态被重新分配到下一轮本地 SDCA 迭代的数据分区，然后执行。 因为只有外层迭代需要网络通信，外层迭代和本地 SDCA 迭代之间的次数决定了全部的网络消耗。一旦独立的数据分区分布在集群中时，本地 SDCA 是不容易并行的。
 
 算法基于 Jaggi 等人的[相关论文](http://arxiv.org/abs/1409.1458)实现。
 
@@ -48,25 +47,25 @@ $$\mathbf{x}_i \in \mathbb{R}^d$$ being the data points and $$l_{i}$$ 为凸损�
 `SVM` 是一个预测模型（`Predictor`）。
 因此，它支持拟合（`fit`）与预测（`predict`）两种操作。
 
-### 拟合
+### 拟合操作
 
 SVM 通过 `LabeledVector` 集合进行训练：
 
 * `fit: DataSet[LabeledVector] => Unit`
 
-### 预测
+### 预测操作
 
 SVM 会对 FlinkML `Vector` 的所有子类预测其对应的分类标签：
 
 * `predict[T <: Vector]: DataSet[T] => DataSet[(T, Double)]`，其中 `(T, Double)` 对应（原始特征值，预测的分类）
 
-如果想要对模型的预测结果进行评估，可以对已正确分类的样本集做预测。传入 `DataSet[(Vector, Double)]` 返回 `DataSet[(Double, Double)]`。返回结构的首元素为传入参数提供的真值，第二个元素为预测值，可以使用这个`(真值, 预测值)`集合来评估算法的准确率和执行情况：
+如果想要对模型的预测结果进行评估，可以对已正确分类的样本集做预测。传入 `DataSet[(Vector, Double)]` 返回 `DataSet[(Double, Double)]`。返回结构的首元素为传入参数提供的实际值，第二个元素为预测值，可以使用这个`(实际值, 预测值)`集合中（通过比较实际值与预测值的偏离度）来评估算法的准确率：
 
 * `predict: DataSet[(Vector, Double)] => DataSet[(Double, Double)]`
 
 ## 参数
 
-SVM 的执行可以通过下面的参数进行控制：
+在SVM 的算法的执行过程中，可以通过下面的参数进行控制：
 
 <table class="table table-bordered">
 <thead>
@@ -81,7 +80,7 @@ SVM 的执行可以通过下面的参数进行控制：
     <td><strong>Blocks</strong></td>
     <td>
       <p>
-        设定输入数据被切分后的块数量 每块数据都会执行一个本地SDCA(随机对偶坐标上升)方法 设定值应至少相当于并发总数 若没有指定，那么将使用输入DataSet的并发值作为块的数量 (默认值：<strong>None</strong>)
+        设定输入数据被切分的块数量 每块数据都被一个本地SDCA(随机对偶坐标上升)方法单独使用，块数设定值应至少大于或等并发线程总数，若没有指定，那么将使用输入DataSet的并发值作为块的数量 (默认值：<strong>None</strong>)
       </p>
     </td>
   </tr>
@@ -89,7 +88,7 @@ SVM 的执行可以通过下面的参数进行控制：
     <td><strong>Iterations</strong></td>
     <td>
       <p>
-        定义外层方法的最大迭代次数。 也可以认为它定义了SDCA方法应用于块数据的频繁程度。 每次迭代后，本地计算的权值向量更新必须被归纳更新至全局的权值向量 新的权值向量将会在每次迭代开始时广播至所有的SDCA任务 (默认值：<strong>10</strong>)
+        定义外层方法的最大迭代次数。 也可以认为它定义了SDCA方法调用于块数据的频繁程度。 每次迭代后，本地计算的权值向量更新值都必须同步合并更新至全局的权值向量，新的权值向量将会在每次迭代开始时广播至所有的SDCA任务 (默认值：<strong>10</strong>)
       </p>
     </td>
   </tr>
@@ -113,7 +112,7 @@ SVM 的执行可以通过下面的参数进行控制：
     <td><strong>Stepsize</strong></td>
     <td>
       <p>
-      定义更新权值向量的初始步长。 步长越大，每次权重向量值更新的就越多。$\frac{stepsize}{blocks}$ 这个比例实际影响着更新操作。 如果算法变得不稳定，此值需要被调整 (默认值：<strong>1.0</strong>)
+      此参数定义更新权重值向量的初始步长。 步长越大，权重向量值更新的量就越大。合理的步长值一般设为$\frac{stepsize}{blocks}$ 的计算值。 如果算法变得不稳定，此值需要被调整 (默认值：<strong>1.0</strong>)
       </p>
     </td>
   </tr>
@@ -121,7 +120,7 @@ SVM 的执行可以通过下面的参数进行控制：
     <td><strong>ThresholdValue</strong></td>
     <td>
       <p>
-       设定一个边界值，若决策函数返回值超过了它，则标记为正类(+1.0)。若决策函数的返回值低于它，标记为负类(-1.0)。 若想要得到原始的决策函数返回值，需要使用 OutputDecisionFunction 参数来表明。(默认值：<strong>0.0</strong>)
+       设定一个边界值，若决策函数返回值大于它，则标记为正类(+1.0)。若决策函数的返回值小于此边界值，则标记为负类(-1.0)。 若想要得到决策函数原始的返回值（样本与超平面的原始距离值），需要通过设定 OutputDecisionFunction 参数值表明。 当OutputDecisionFunction的参数值为true时候，返回原始值。(默认值：<strong>0.0</strong>)
       </p>
     </td>
   </tr>
@@ -129,7 +128,7 @@ SVM 的执行可以通过下面的参数进行控制：
     <td><strong>OutputDecisionFunction</strong></td>
     <td>
       <p>
-        决定 SVM 的预测和评估方法是返回与分离超平面的距离还是二分类的标签值。设定为 true 返回每个输入与超平面的原始距离。 设置为 false 返回二分类标签值（+1.0, -1.0）。(默认值：<strong>false</strong>)
+        决定 SVM 的预测和评估方法是返回 分离超平面的距离值还是二分类的标签值。设定为 true， 返回每个输入样本与超平面的原始距离。 设置为 false 返回二分类标签值（+1.0, -1.0）。(默认值：<strong>false</strong>)
       </p>
     </td>
   </tr>
@@ -137,7 +136,7 @@ SVM 的执行可以通过下面的参数进行控制：
   <td><strong>Seed</strong></td>
   <td>
     <p>
-      定义随机数生成器的种子。 此值决定了 SDCA 方法将会选择哪一个数据点 (默认值：<strong>Random Long Integer</strong>)
+      定义随机数生成器的种子。 此值决定了 SDCA 方法将会选择哪些个数据点 (默认值：<strong>Random Long Integer（随机长整型）</strong>)
     </p>
   </td>
 </tr>
