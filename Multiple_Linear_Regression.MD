@@ -11,7 +11,7 @@
 
 多元线性回归尝试找到最适合所提供输入数据的线性函数。只要给定赋值了的(\mathbf{x}, y)的输入数据的集合，多元线性回归找到向量\mathbf{w}，这样残差平方的总和最小化可以表示为：
 ```math
-S(\mathbf{w}) = \sum_{i=1} \left(y - \mathbf{w}^T\mathbf{x_i} \right)^2
+$$ S(\mathbf{w}) = \sum_{i=1} \left(y - \mathbf{w}^T\mathbf{x_i} \right)^2 $$
 ```
 用矩阵表示法可以这样写：
 ```math
