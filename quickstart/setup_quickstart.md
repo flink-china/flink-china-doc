@@ -26,19 +26,19 @@ under the License.
 * This will be replaced by the TOC
 {:toc}
 
-Get a Flink example program up and running in a few simple steps.
+通过以下步骤把一个Flink示例程序跑起来.
 
-## Setup: Download and Start Flink
+## Setup:下载和启动Flink
 
-Flink runs on __Linux, Mac OS X, and Windows__. To be able to run Flink, the only requirement is to have a working __Java 7.x__ (or higher) installation. Windows users, please take a look at the [Flink on Windows]({{ site.baseurl }}/setup/flink_on_windows.html) guide which describes how to run Flink on Windows for local setups.
+Flink可以再 __Linux, Mac OS X, and Windows__ 上运行. 为了运行Flink, 需要安装 __Java 7.x__ (或者更高版本的Java). Windows用户, 请参通过下步骤 来运行Flink[Flink on Windows]({{ site.baseurl }}/setup/flink_on_windows.html) .
 
-You can check the correct installation of Java by issuing the following command:
+通过以下命令来检测Java是否正确安装:
 
 ~~~bash
 java -version
 ~~~
 
-If you have Java 8, the output will look something like this:
+如果你安装的Java 8, 运行后会输出如下:
 
 ~~~bash
 java version "1.8.0_111"
@@ -50,11 +50,11 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.111-b14, mixed mode)
 <div class="codetabs" markdown="1">
 
 <div data-lang="Download and Unpack" markdown="1">
-1. Download a binary from the [downloads page](http://flink.apache.org/downloads.html). You can pick
-   any Hadoop/Scala combination you like. If you plan to just use the local file system, any Hadoop
-   version will work fine.
-2. Go to the download directory.
-3. Unpack the downloaded archive.
+1. 通过 [downloads page](http://flink.apache.org/downloads.html)下载Flink的bin文件. Y你可以
+选择任何你喜欢的Hadoop/Scala版本. 如果你只使用本地文件系统, 任何
+版本的Hadoop都是OK的.
+2. 进入到下载目录.
+3. 解压文件.
 
 ~~~bash
 $ cd ~/Downloads        # Go to download directory
@@ -64,7 +64,7 @@ $ cd flink-{{site.version}}
 </div>
 
 <div data-lang="MacOS X" markdown="1">
-For MacOS X users, Flink can be installed through [Homebrew](https://brew.sh/).
+对于MacOS X 用户, 可通过如下步骤安装Flink [Homebrew](https://brew.sh/).
 
 ~~~bash
 $ brew install apache-flink
@@ -77,8 +77,8 @@ Version: 1.2.0, Commit ID: 1c659cf
 </div>
 
 {% else %}
-### Download and Compile
-Clone the source code from one of our [repositories](http://flink.apache.org/community.html#source-code), e.g.:
+### 下载和编译
+克隆源码 [repositories](http://flink.apache.org/community.html#source-code), e.g.:
 
 ~~~bash
 $ git clone https://github.com/apache/flink.git
@@ -88,17 +88,17 @@ $ cd build-target               # this is where Flink is installed to
 ~~~
 {% endif %}
 
-### Start a Local Flink Cluster
+### 启动Flink 本地模式集群
 
 ~~~bash
 $ ./bin/start-local.sh  # Start Flink
 ~~~
 
-Check the __JobManager's web frontend__ at [http://localhost:8081](http://localhost:8081) and make sure everything is up and running. The web frontend should report a single available TaskManager instance.
+ 通过访问 [http://localhost:8081](http://localhost:8081)检查 __JobManager's 网页__ ， 确认是否已经启动. 网页端会有一个可用TaskManager 实例.
 
 <a href="{{ site.baseurl }}/page/img/quickstart-setup/jobmanager-1.png" ><img class="img-responsive" src="{{ site.baseurl }}/page/img/quickstart-setup/jobmanager-1.png" alt="JobManager: Overview"/></a>
 
-You can also verify that the system is running by checking the log files in the `logs` directory:
+你也可通过检查 `logs` 目录下的日志来确认是否已经启动:
 
 ~~~bash
 $ tail log/flink-*-jobmanager-*.log
@@ -108,9 +108,9 @@ INFO ... - Web frontend listening at 127.0.0.1:8081
 INFO ... - Registered TaskManager at 127.0.0.1 (akka://flink/user/taskmanager)
 ~~~
 
-## Read the Code
+## 阅读代码
 
-You can find the complete source code for this SocketWindowWordCount example in [scala](https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/scala/org/apache/flink/streaming/scala/examples/socket/SocketWindowWordCount.scala) and [java](https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/java/org/apache/flink/streaming/examples/socket/SocketWindowWordCount.java) on GitHub.
+在GitHub上你可以在这找到完整的[scala](https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/scala/org/apache/flink/streaming/scala/examples/socket/SocketWindowWordCount.scala)语言的SocketWindowWordCount 例子in  和 [java](https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/java/org/apache/flink/streaming/examples/socket/SocketWindowWordCount.java) .
 
 <div class="codetabs" markdown="1">
 <div data-lang="scala" markdown="1">
@@ -224,20 +224,17 @@ public class SocketWindowWordCount {
 </div>
 </div>
 
-## Run the Example
+## 运行例子
 
-Now, we are going to run this Flink application. It will read text from
-a socket and once every 5 seconds print the number of occurrences of
-each distinct word during the previous 5 seconds, i.e. a tumbling
-window of processing time, as long as words are floating in.
+现在我们要运行Flink程序. 程序将会每5秒钟读取socket端的数据流，打印单词出现的频率.
 
-* First of all, we use **netcat** to start local server via
+* 首先, 我们启动命令 **netcat** 打开服务端口
 
   ~~~bash
   $ nc -l 9000
   ~~~
 
-* Submit the Flink program:
+* 提交Flink 程序:
 
   ~~~bash
   $ ./bin/flink run examples/streaming/SocketWindowWordCount.jar --port 9000
@@ -257,7 +254,7 @@ window of processing time, as long as words are floating in.
   11/04/2016 14:04:51     Source: Socket Stream -> Flat Map(1/1) switched to RUNNING
   ~~~
 
-  The program connects to the socket and waits for input. You can check the web interface to verify that the job is running as expected:
+  程序连接上socket，等待输入. 可以通过web端访问到运行的程序实例:
 
   <div class="row">
     <div class="col-sm-6">
@@ -268,10 +265,7 @@ window of processing time, as long as words are floating in.
     </div>
   </div>
 
-* Words are counted in time windows of 5 seconds (processing time, tumbling
-  windows) and are printed to `stdout`. Monitor the JobManager's output file
-  and write some text in `nc` (input is sent to Flink line by line after
-  hitting <RETURN>):
+* 单词每5秒钟被计数一次 并打印. 
 
   ~~~bash
   $ nc -l 9000
@@ -280,8 +274,7 @@ window of processing time, as long as words are floating in.
   bye
   ~~~
 
-  The `.out` file will print the counts at the end of each time window as long
-  as words are floating in, e.g.:
+  `.out` 文件打印出每次统计的结果:
 
   ~~~bash
   $ tail -f log/flink-*-jobmanager-*.out
@@ -290,12 +283,12 @@ window of processing time, as long as words are floating in.
   ipsum : 4
   ~~~~
 
-  To **stop** Flink when you're done type:
+   如下操作**停止** Flink:
 
   ~~~bash
   $ ./bin/stop-local.sh
   ~~~
 
-## Next Steps
+## 下一步
 
 Check out some more [examples]({{ site.baseurl }}/examples) to get a better feel for Flink's programming APIs. When you are done with that, go ahead and read the [streaming guide]({{ site.baseurl }}/dev/datastream_api.html).
