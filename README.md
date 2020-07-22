@@ -1,4 +1,4 @@
-[Flink 中文文档](http://doc.flink-china.org) 网站是 [Apache Flink 官方文档](https://ci.apache.org/projects/flink/flink-docs-master/) 的中文翻译版。
+[Flink 中文文档](https://ci.apache.org/projects/flink/flink-docs-master/zh/) 网站是 [Apache Flink 官方文档](https://ci.apache.org/projects/flink/flink-docs-master/) 的中文翻译版。
 
 这篇README主要是介绍如何构建和贡献 Apache Flink 文档/中文文档。
 
